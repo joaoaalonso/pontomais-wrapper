@@ -36,7 +36,7 @@ const handle = async () => {
     const hours = parseInt(minutes / 60)
     const rest = parseInt(minutes % 60)
 
-    console.log(`${hours}h e ${rest}m`)
+    console.log(`Total: ${hours}h e ${rest}m`)
 }
 
 handle()
