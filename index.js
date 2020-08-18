@@ -8,7 +8,8 @@ const { app, Menu, Tray, remove } = require('electron')
 
 const baseUrl = 'https://api.pontomais.com.br/api'
 
-const journey = (8 * 60) + 48
+const JOURNEY = (8 * 60) + 48
+const REFRESH_TIME = 60000
 
 let tray = null
 app.on('ready', () => {
@@ -28,9 +29,9 @@ app.on('ready', () => {
     tray.setContextMenu(contextMenu)
 
     update(tray)
-    setTimeout(() => {
+    setInterval(() => {
         update(tray)
-    }, 300000)
+    }, REFRESH_TIME)
 })
 
 const getEmployeeId = async (credentials) => {
@@ -84,13 +85,12 @@ const getData = async () => {
     const dates = data.timeline
         .map(timeline => moment(timeline.datetime))
         .filter(date => date.isAfter(moment().startOf('Day')))
-    
+        
     return dates
 }
 
 const calculateMinutes = (dates) => {
-    let sortedDates = JSON.parse(JSON.stringify(dates))
-    sortedDates = sortedDates.sort((a, b) => a.valueOf() - b.valueOf())
+    const sortedDates = dates.sort((a, b) => a.valueOf() - b.valueOf())
     
     if (sortedDates.length % 2) {
         sortedDates.push(moment())
@@ -109,6 +109,7 @@ const calculateMinutes = (dates) => {
 
 const update = async (tray) => {
     const dates = await getData()
+    const even = !!dates.lengh % 2
     const minutes = calculateMinutes(dates)
 
     const hours = parseInt(minutes / 60).toString().padStart(2, '0')
@@ -116,8 +117,8 @@ const update = async (tray) => {
     const text = `${hours}:${rest}`
 
     let color = 'green'
-    if (minutes >= journey) color = 'red'
-    if (!(dates.length % 2)) color = 'white'
+    if (minutes >= JOURNEY) color = 'red'
+    if (even) color = 'white'
 
     tray.setTitle(chalk[color](text))
 }
