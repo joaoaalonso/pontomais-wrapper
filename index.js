@@ -7,6 +7,12 @@ const inquirer = require('inquirer')
 
 const baseUrl = 'https://api.pontomais.com.br/api'
 
+const getEmployeeId = async (credentials) => {
+    const { data } = await axios.get(`${baseUrl}/session`, { headers: credentials })
+    
+    return data.session.employee.id
+}
+
 const getCredentials = async () => {
     const credentialsPath = './credentials.json'
     if (fs.existsSync(credentialsPath)) {
@@ -38,6 +44,8 @@ const getCredentials = async () => {
         'token-type': 'Bearer'
     }
 
+    credentials.employeeId = await getEmployeeId(credentials)
+
     fs.writeFileSync(credentialsPath, JSON.stringify(credentials))
 
     return credentials
@@ -45,9 +53,9 @@ const getCredentials = async () => {
 
 const getData = async () => {
     const credentials = await getCredentials()
-    
+
     const spinner = ora().start()
-    const url = `${baseUrl}/employees/timeline/863530`
+    const url = `${baseUrl}/employees/timeline/${credentials.employeeId}`
     const { data } = await axios.get(url, { headers: credentials })
     spinner.stop()
     
