@@ -59,7 +59,9 @@ const getData = async () => {
     const { data } = await axios.get(url, { headers: credentials })
     spinner.stop()
     
-    const dates = data.timeline.map(timeline => moment(timeline.datetime))
+    const dates = data.timeline
+        .map(timeline => moment(timeline.datetime))
+        .filter(date => date.isAfter(moment().startOf('Day')))
     
     return dates
 }
