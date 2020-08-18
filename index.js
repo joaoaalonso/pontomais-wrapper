@@ -1,11 +1,37 @@
 const fs = require('fs')
-const ora = require('ora')
 const axios = require('axios')
 const chalk = require('chalk')
 const moment = require('moment')
 const inquirer = require('inquirer')
 
+const { app, Menu, Tray, remove } = require('electron')
+
 const baseUrl = 'https://api.pontomais.com.br/api'
+
+const journey = (8 * 60) + 48
+
+let tray = null
+app.on('ready', () => {
+    app.dock.hide()
+    tray = new Tray('./blank.png')
+    const contextMenu = Menu.buildFromTemplate([
+        { 
+            label: 'Atualizar',
+            click: () => update(tray)
+        },
+        {  type: 'separator', },
+        { 
+            label: 'Fechar',
+            click: () => app.exit(0)
+        },
+    ])
+    tray.setContextMenu(contextMenu)
+
+    update(tray)
+    setTimeout(() => {
+        update(tray)
+    }, 300000)
+})
 
 const getEmployeeId = async (credentials) => {
     const { data } = await axios.get(`${baseUrl}/session`, { headers: credentials })
@@ -33,9 +59,7 @@ const getCredentials = async () => {
         }
     ])
 
-    const spinner = ora().start()
     const { data } = await axios.post(`${baseUrl}/auth/sign_in`, auth)
-    spinner.stop()
 
     const credentials = {
         uid: auth.login,
@@ -54,10 +78,8 @@ const getCredentials = async () => {
 const getData = async () => {
     const credentials = await getCredentials()
 
-    const spinner = ora().start()
     const url = `${baseUrl}/employees/timeline/${credentials.employeeId}`
     const { data } = await axios.get(url, { headers: credentials })
-    spinner.stop()
     
     const dates = data.timeline
         .map(timeline => moment(timeline.datetime))
@@ -67,7 +89,8 @@ const getData = async () => {
 }
 
 const calculateMinutes = (dates) => {
-    const sortedDates = dates.sort((a, b) => a.valueOf() - b.valueOf())
+    let sortedDates = JSON.parse(JSON.stringify(dates))
+    sortedDates = sortedDates.sort((a, b) => a.valueOf() - b.valueOf())
     
     if (sortedDates.length % 2) {
         sortedDates.push(moment())
@@ -84,13 +107,17 @@ const calculateMinutes = (dates) => {
     return minutes
 }
 
-const handle = async () => {
+const update = async (tray) => {
     const dates = await getData()
     const minutes = calculateMinutes(dates)
-    const hours = parseInt(minutes / 60)
-    const rest = parseInt(minutes % 60)
 
-    console.log(chalk.green(`\nTotal: ${hours}h e ${rest}m`))
+    const hours = parseInt(minutes / 60).toString().padStart(2, '0')
+    const rest = parseInt(minutes % 60).toString().padStart(2, '0')
+    const text = `${hours}:${rest}`
+
+    let color = 'green'
+    if (minutes >= journey) color = 'red'
+    if (!(dates.length % 2)) color = 'white'
+
+    tray.setTitle(chalk[color](text))
 }
-
-handle()
