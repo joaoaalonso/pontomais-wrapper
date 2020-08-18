@@ -1,12 +1,56 @@
+const fs = require('fs')
+const ora = require('ora')
 const axios = require('axios')
+const chalk = require('chalk')
 const moment = require('moment')
+const inquirer = require('inquirer')
 
-const credentials = require('./credentials.json')
+const baseUrl = 'https://api.pontomais.com.br/api'
 
-const url = 'https://api.pontomais.com.br/api/employees/timeline/863530'
+const getCredentials = async () => {
+    const credentialsPath = './credentials.json'
+    if (fs.existsSync(credentialsPath)) {
+        const credentials = fs.readFileSync(credentialsPath)
+        return JSON.parse(credentials)
+    }
+    
+    const auth = await inquirer.prompt([
+        {
+            type: 'string',
+            name: 'login',
+            message: 'Login'
+        },
+        {
+            type: 'password',
+            name: 'password',
+            message: 'Senha'
+        }
+    ])
+
+    const spinner = ora().start()
+    const { data } = await axios.post(`${baseUrl}/auth/sign_in`, auth)
+    spinner.stop()
+
+    const credentials = {
+        uid: auth.login,
+        client: data.client_id,
+        'access-token': data.token,
+        'token-type': 'Bearer'
+    }
+
+    fs.writeFileSync(credentialsPath, JSON.stringify(credentials))
+
+    return credentials
+}
 
 const getData = async () => {
+    const credentials = await getCredentials()
+    
+    const spinner = ora().start()
+    const url = `${baseUrl}/employees/timeline/863530`
     const { data } = await axios.get(url, { headers: credentials })
+    spinner.stop()
+    
     const dates = data.timeline.map(timeline => moment(timeline.datetime))
     
     return dates
@@ -36,7 +80,7 @@ const handle = async () => {
     const hours = parseInt(minutes / 60)
     const rest = parseInt(minutes % 60)
 
-    console.log(`Total: ${hours}h e ${rest}m`)
+    console.log(chalk.green(`\nTotal: ${hours}h e ${rest}m`))
 }
 
 handle()
