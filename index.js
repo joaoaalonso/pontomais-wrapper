@@ -116,8 +116,8 @@ const update = async (tray) => {
     const rest = parseInt(minutes % 60).toString().padStart(2, '0')
     const text = `${hours}:${rest}`
 
-    let color = 'green'
-    if (minutes >= JOURNEY) color = 'red'
+    let color = 'red'
+    if (minutes >= JOURNEY) color = 'green'
     if (even) color = 'white'
 
     let missingMinutes = JOURNEY - minutes
