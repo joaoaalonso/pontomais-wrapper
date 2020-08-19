@@ -109,7 +109,7 @@ const calculateMinutes = (dates) => {
 
 const update = async (tray) => {
     const dates = await getData()
-    const even = !!dates.lengh % 2
+    const even = !(dates.length % 2)
     const minutes = calculateMinutes(dates)
 
     const hours = parseInt(minutes / 60).toString().padStart(2, '0')
@@ -120,5 +120,14 @@ const update = async (tray) => {
     if (minutes >= JOURNEY) color = 'red'
     if (even) color = 'white'
 
+    let missingMinutes = JOURNEY - minutes
+    const missingText = missingMinutes > 0 ? 'Faltam' : 'Hora extra: '
+    
+    if (missingMinutes < 0) missingMinutes = missingMinutes * -1
+
+    const missingHours = parseInt(missingMinutes / 60).toString().padStart(2, '0')
+    const missingRest = parseInt(missingMinutes % 60).toString().padStart(2, '0')
+
     tray.setTitle(chalk[color](text))
+    tray.setToolTip(`${missingText} ${missingHours}:${missingRest}`)
 }
